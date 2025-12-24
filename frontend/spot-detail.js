@@ -130,43 +130,76 @@ async function loadReviews() {
             return;
         }
 
-        // レビューを表示
+        // レビューを表示（安全な DOM 構築で XSS を防止）
         reviews.forEach(review => {
             const reviewDate = new Date(review.created_at);
             const dateStr = `${reviewDate.getFullYear()}年${reviewDate.getMonth() + 1}月${reviewDate.getDate()}日`;
 
-            // 画像がある場合は画像HTMLを追加（クリックで拡大表示）
-            const photoHtml = review.photo_filename
-                ? `<div style="margin-top: 15px;">
-                       <img src="assets/images/reviews/${review.photo_filename}"
-                            alt="レビュー画像"
-                            onclick="showImageModal('assets/images/reviews/${review.photo_filename}')"
-                            style="max-width: 100%; max-height: 250px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer;">
-                   </div>`
-                : '';
+            // review 要素を DOM API で作成し、ユーザー入力は textContent で挿入する
+            const reviewItem = document.createElement('div');
+            reviewItem.className = 'review-item';
+            reviewItem.dataset.reviewId = review.review_id;
 
-            // 自分のレビューの場合、削除ボタンを表示
-            const deleteButtonHtml = (currentUser && Number(review.user_id) === Number(currentUser.user_id))
-                ? `<button onclick="deleteReview(${review.review_id})"
-                           style="margin-top: 10px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                       削除
-                   </button>`
-                : '';
+            const header = document.createElement('div');
+            header.className = 'review-header';
 
-            // XSS脆弱性（review_contentをエスケープせずにHTMLに挿入）
-            const reviewHtml = `
-                <div class="review-item" data-review-id="${review.review_id}">
-                    <div class="review-header">
-                        <span class="reviewer-name">${review.user_name}</span>
-                        <span class="review-date">${dateStr}</span>
-                    </div>
-                    <div class="review-rating">${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}</div>
-                    <div class="review-text">${review.review_content}</div>
-                    ${photoHtml}
-                    ${deleteButtonHtml}
-                </div>
-            `;
-            reviewsList.insertAdjacentHTML('beforeend', reviewHtml);
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'reviewer-name';
+            nameSpan.textContent = review.user_name || '';
+
+            const dateSpan = document.createElement('span');
+            dateSpan.className = 'review-date';
+            dateSpan.textContent = dateStr;
+
+            header.appendChild(nameSpan);
+            header.appendChild(dateSpan);
+            reviewItem.appendChild(header);
+
+            const ratingDiv = document.createElement('div');
+            ratingDiv.className = 'review-rating';
+            ratingDiv.textContent = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+            reviewItem.appendChild(ratingDiv);
+
+            const textDiv = document.createElement('div');
+            textDiv.className = 'review-text';
+            textDiv.textContent = review.review_content || '';
+            reviewItem.appendChild(textDiv);
+
+            // 画像がある場合は DOM で作成（onclick はイベントリスナで登録）
+            if (review.photo_filename) {
+                const photoWrapper = document.createElement('div');
+                photoWrapper.style.marginTop = '15px';
+
+                const img = document.createElement('img');
+                img.src = `assets/images/reviews/${review.photo_filename}`;
+                img.alt = 'レビュー画像';
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '250px';
+                img.style.borderRadius = '8px';
+                img.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                img.style.cursor = 'pointer';
+                img.addEventListener('click', () => showImageModal(`assets/images/reviews/${review.photo_filename}`));
+
+                photoWrapper.appendChild(img);
+                reviewItem.appendChild(photoWrapper);
+            }
+
+            // 自分のレビューの場合、削除ボタンを表示（イベントリスナで処理）
+            if (currentUser && Number(review.user_id) === Number(currentUser.user_id)) {
+                const btn = document.createElement('button');
+                btn.textContent = '削除';
+                btn.style.marginTop = '10px';
+                btn.style.padding = '8px 16px';
+                btn.style.background = '#dc3545';
+                btn.style.color = 'white';
+                btn.style.border = 'none';
+                btn.style.borderRadius = '5px';
+                btn.style.cursor = 'pointer';
+                btn.addEventListener('click', () => deleteReview(review.review_id));
+                reviewItem.appendChild(btn);
+            }
+
+            reviewsList.appendChild(reviewItem);
         });
     } catch (error) {
         console.error('レビューの取得に失敗しました:', error);
@@ -221,6 +254,21 @@ function setRating(rating) {
             star.classList.remove('active');
         }
     });
+}
+
+/**
+ * HTMLエスケープ（XSS対策）
+ */
+function escapeHtml(text) {
+    if (!text) return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.toString().replace(/[&<>"']/g, m => map[m]);
 }
 
 // レビュー投稿
