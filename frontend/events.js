@@ -55,22 +55,56 @@ function displayEvents(events) {
         };
         const areaDisplay = areaNames[event.area] || event.area;
 
-        // XSS脆弱性（event_nameをエスケープせずにHTMLに挿入）
-        eventElement.innerHTML = `
-            <div class="event-date-box">
-                <div class="event-month">${month}月</div>
-                <div class="event-day">${day}</div>
-            </div>
-            <div class="event-info">
-                <h3>${event.event_name}</h3>
-                <div class="event-meta">
-                    <span class="event-location">📍 ${event.location}</span>
-                    <span class="event-area">${areaDisplay}</span>
-                    <span class="event-category">${event.category}</span>
-                </div>
-                <p class="event-description">${event.description}</p>
-            </div>
-        `;
+        // 安全な DOM 構築（XSS対策）：ユーザー入力は必ず textContent で挿入する
+        const dateBox = document.createElement('div');
+        dateBox.className = 'event-date-box';
+
+        const monthDiv = document.createElement('div');
+        monthDiv.className = 'event-month';
+        monthDiv.textContent = `${month}月`;
+
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'event-day';
+        dayDiv.textContent = `${day}`;
+
+        dateBox.appendChild(monthDiv);
+        dateBox.appendChild(dayDiv);
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'event-info';
+
+        const title = document.createElement('h3');
+        title.textContent = event.event_name || '';
+
+        const meta = document.createElement('div');
+        meta.className = 'event-meta';
+
+        const locSpan = document.createElement('span');
+        locSpan.className = 'event-location';
+        locSpan.textContent = `📍 ${event.location || ''}`;
+
+        const areaSpan = document.createElement('span');
+        areaSpan.className = 'event-area';
+        areaSpan.textContent = areaDisplay;
+
+        const catSpan = document.createElement('span');
+        catSpan.className = 'event-category';
+        catSpan.textContent = event.category || '';
+
+        meta.appendChild(locSpan);
+        meta.appendChild(areaSpan);
+        meta.appendChild(catSpan);
+
+        const desc = document.createElement('p');
+        desc.className = 'event-description';
+        desc.textContent = event.description || '';
+
+        infoDiv.appendChild(title);
+        infoDiv.appendChild(meta);
+        infoDiv.appendChild(desc);
+
+        eventElement.appendChild(dateBox);
+        eventElement.appendChild(infoDiv);
 
         eventsGrid.appendChild(eventElement);
     });

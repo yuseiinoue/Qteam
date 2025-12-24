@@ -88,3 +88,10 @@ function displayEvents(events) {
 ```
 [Level 4-B] 問題の簡単な説明
 ```
+
+## 修正メモ
+
+- 修正ファイル: `frontend/events.js`
+- 修正内容: `displayEvents` 内の `innerHTML` による文字列挿入を廃止し、`createElement` と `textContent` を用いた安全な DOM 構築に置き換えました。これにより `event_name` や `description` に含まれる HTML タグはテキストとして表示され、スクリプトは実行されません。
+- 検証: 悪意のある `<img src=x onerror="alert('XSS攻撃')">` を含むイベント名があっても、アラートは表示されずタグがそのままテキスト表示されることを想定しています。ブラウザでの確認を推奨します。
+
