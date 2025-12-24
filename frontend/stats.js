@@ -59,7 +59,7 @@ function displayTopSpots(spots) {
     listElement.innerHTML = '';
 
     spots.forEach((spot, index) => {
-        const rank = index; // バグ: +1 していない
+        const rank = index + 1; // Use 1-based ranking for display.
         const medal = getMedal(rank);
 
         const item = document.createElement('li');
