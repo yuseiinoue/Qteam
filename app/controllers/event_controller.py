@@ -19,7 +19,15 @@ def get_events():
 
         # フィルター適用
         if month:
-            events = event_service.get_events_by_month(month)
+            try:
+                month_value = int(month)
+            except (TypeError, ValueError):
+                return jsonify({'error': '月は1〜12の範囲で指定してください'}), 400
+
+            if not 1 <= month_value <= 12:
+                return jsonify({'error': '月は1〜12の範囲で指定してください'}), 400
+
+            events = event_service.get_events_by_month(month_value)
         elif area:
             events = event_service.get_events_by_area(area)
         else:
