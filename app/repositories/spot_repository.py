@@ -57,12 +57,12 @@ class SpotRepository:
 
         try:
             cursor = conn.cursor()
-            # GLOB演算子を使うと大文字小文字が区別される
-            # 本来はLIKE演算子を使うべき（LIKEは大文字小文字を区別しない）
+            # LIKE演算子を使用して部分一致検索を行う（ワイルドカードは '%' を使用）
+            # GLOB と % を組み合わせるとワイルドカードが機能しないため、LIKE に変更する
             search_keyword = f'%{keyword}%'
             cursor.execute('''
                 SELECT * FROM tourist_spots
-                WHERE spot_name GLOB ? OR description GLOB ? OR address GLOB ?
+                WHERE spot_name LIKE ? OR description LIKE ? OR address LIKE ?
                 ORDER BY spot_id
             ''', (search_keyword, search_keyword, search_keyword))
             spots = [dict(row) for row in cursor.fetchall()]
