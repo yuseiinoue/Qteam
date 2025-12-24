@@ -78,3 +78,10 @@ def find_by_keyword(self, keyword):
 ```
 [Level 3-H] 問題の簡単な説明
 ```
+
+## 修正メモ
+
+- 修正ファイル: `app/repositories/spot_repository.py`
+- 修正内容: SQLの演算子を `GLOB` から `LIKE` に変更（ワイルドカード `%` を利用するため）
+- 検証: ローカルのデータベースで「草津」を検索し、`草津温泉` がヒットすることを確認しました。
+
